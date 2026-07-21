@@ -5,7 +5,7 @@ async function startCamera() {
     const reader = document.getElementById("reader");
 
     reader.innerHTML = "";
-
+    alert(typeof ZXing);
     codeReader = new ZXing.BrowserMultiFormatReader();
 
     try {
