@@ -6,7 +6,7 @@ async function startCamera() {
 
     reader.innerHTML = "";
     alert(typeof ZXing);
-    codeReader = new ZXing.BrowserMultiFormatReader();
+    codeReader = new ZXing.BrowserBarcodeReader();
 
     try {
 
