@@ -1,1 +1,118 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
 
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>انبارگردانی شانلی</title>
+
+<link rel="manifest" href="manifest.json">
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<div id="app">
+
+<div id="loginPage">
+
+<h1>📦 انبارگردانی شانلی</h1>
+
+<input
+id="user"
+placeholder="نام انباردار">
+
+<input
+id="supervisor"
+placeholder="نام ناظر">
+
+<select id="branch">
+
+<option>انبار مرکزی</option>
+<option>ارومیه</option>
+<option>شوط</option>
+
+</select>
+
+<button id="startBtn">
+
+شروع انبارگردانی
+
+</button>
+
+</div>
+
+<div id="scanPage" style="display:none;">
+
+<div class="top">
+
+<div>
+
+<span id="userLabel"></span>
+
+<br>
+
+<small id="branchLabel"></small>
+
+</div>
+
+<div>
+
+اقلام ثبت شده
+
+<h2 id="itemCount">0</h2>
+
+</div>
+
+</div>
+
+<div id="reader"></div>
+
+<div class="qtyBox">
+
+<button id="minus">−</button>
+
+<input
+id="qty"
+value="1"
+readonly>
+
+<button id="plus">+</button>
+
+</div>
+
+<input
+id="barcode"
+placeholder="بارکد">
+
+<div class="buttons">
+
+<button id="scanBtn">
+
+ثبت
+
+</button>
+
+<button id="finishBtn">
+
+پایان
+
+</button>
+
+</div>
+
+<div id="result"></div>
+
+</div>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+
+</html>
