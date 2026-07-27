@@ -41,7 +41,7 @@ document.querySelector("#app").innerHTML = `
 <option>انبار مرکزی</option>
 <option>شعبه شوط</option>
 <option>شعبه ارومیه</option>
-<option>شعبه سلماس</option>
+<option>شعبه خوی</option>
 </select>
 
 <button id="startBtn">
