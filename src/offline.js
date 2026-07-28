@@ -29,3 +29,6 @@ export function queueCount() {
 export function clearQueue() {
   localStorage.removeItem(KEY);
 }
+export function queueCount() {
+  return getQueue().length;
+}

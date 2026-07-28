@@ -1,7 +1,7 @@
 import "./style.css";
 
 import { startScanner } from "./scanner";
-
+import { queueCount } from "./offline";
 import {
   startNewSession,
   continueSession,
@@ -64,8 +64,11 @@ document.querySelector("#app").innerHTML = `
     <div class="infoItem" style="text-align:left">
         <div class="infoLabel">📦 ثبت شده</div>
         <div id="count" class="infoValue countValue">0</div>
+   
     </div>
-
+       <div id="syncStatus" class="syncStatus">
+       🟢 آنلاین | در انتظار ارسال: 0
+    </div>
 </div>
 
 
@@ -246,7 +249,29 @@ if (
 //     handleScan
 // );
 
+function updateSyncStatus() {
 
+  const status = document.getElementById("syncStatus");
+
+  if (!status) return;
+
+  if (navigator.onLine) {
+
+    status.innerText =
+      `🟢 آنلاین | در انتظار ارسال: ${queueCount()}`;
+
+  } else {
+
+    status.innerText =
+      `🔴 آفلاین | در انتظار ارسال: ${queueCount()}`;
+
+  }
+
+}
+updateSyncStatus();
+window.addEventListener("online", updateSyncStatus);
+window.addEventListener("offline", updateSyncStatus);
+updateSyncStatus();
 };
 function handleScan(code) {
 

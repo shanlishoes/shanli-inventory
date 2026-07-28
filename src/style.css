@@ -428,3 +428,12 @@ select:focus{
 .countValue{
     color:#1976d2;
 }
+.syncStatus{
+  margin:12px 0 18px;
+  padding:12px;
+  border-radius:14px;
+  background:#eef5ff;
+  text-align:center;
+  font-weight:bold;
+  color:#1565c0;
+}
