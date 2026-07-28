@@ -15,7 +15,7 @@ import {
   getSummary
 } from "./api";
 
-import { syncItem } from "./sync";
+import { syncItem, syncPending } from "./sync";
 const summaryCache = {};
 const beep = new Audio("/sounds/beep.mp3");
 
@@ -507,3 +507,12 @@ document.getElementById("clear").onclick = () => {
   document.getElementById("lastQty").innerText =
     "اولین ثبت این بارکد";
 };
+
+// وقتی اینترنت وصل شد، همه موارد ذخیره شده ارسال شوند
+window.addEventListener("online", async () => {
+
+  console.log("🟢 اینترنت وصل شد، شروع همگام‌سازی...");
+
+  await syncPending();
+
+});
