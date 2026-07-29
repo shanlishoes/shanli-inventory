@@ -88,7 +88,7 @@ body{
     background:#fff;
     border-radius:30px;
     padding:22px;
-    margin-top:18px;
+    margin-top:2px;
     box-shadow:0 12px 30px rgba(0,0,0,.08);
 }
 
@@ -393,7 +393,7 @@ select:focus{
     background:#fff;
     border-radius:18px;
     padding:5px 50px;
-    margin-bottom:13px;
+    margin-bottom:5px;
     box-shadow:0 6px 18px rgba(0,0,0,.08);
     flex-direction: row;
     
@@ -429,9 +429,9 @@ select:focus{
     color:#1976d2;
 }
 .syncStatus{
-  margin:12px 0 18px;
-  padding:12px;
-  border-radius:14px;
+  margin:3px 0 3px;
+  padding:4px;
+  border-radius:15px;
   background:#eef5ff;
   text-align:center;
   font-weight:bold;
@@ -442,4 +442,5 @@ select:focus{
     text-align:center;
     color:#777;
     font-size:14px;
+    
 }
