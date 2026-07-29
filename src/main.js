@@ -1,7 +1,7 @@
 import "./style.css";
 
 import { startScanner } from "./scanner";
-import { queueCount } from "./offline";
+import { offlineCount } from "./storage";
 import {
   startNewSession,
   continueSession,
@@ -22,6 +22,20 @@ const beep = new Audio("/sounds/beep.mp3");
 let session = null;
 let qty = 1;
 let count = 0;
+
+// وقتی اینترنت وصل شد، صف آفلاین ارسال شود
+window.addEventListener("online", async () => {
+  await syncPending();
+  updateQueueBadge?.();
+});
+
+// هنگام باز شدن برنامه هم اگر اینترنت وصل بود، ارسال انجام شود
+window.addEventListener("load", async () => {
+  if (navigator.onLine) {
+    await syncPending();
+    updateQueueBadge?.();
+  }
+});
 
 document.querySelector("#app").innerHTML = `
 
@@ -258,12 +272,12 @@ function updateSyncStatus() {
   if (navigator.onLine) {
 
     status.innerText =
-      `🟢 آنلاین | در انتظار ارسال: ${queueCount()}`;
+      `🟢 آنلاین | در انتظار ارسال: ${offlineCount()}`;
 
   } else {
 
     status.innerText =
-      `🔴 آفلاین | در انتظار ارسال: ${queueCount()}`;
+      `🔴 آفلاین | در انتظار ارسال: ${offlineCount()}`;
 
   }
 
@@ -455,6 +469,7 @@ console.log("Save clicked");
   }
 
 });
+updateSyncStatus();
 
 
 
@@ -539,5 +554,5 @@ window.addEventListener("online", async () => {
   console.log("🟢 اینترنت وصل شد، شروع همگام‌سازی...");
 
   await syncPending();
-
+ updateSyncStatus();
 });
