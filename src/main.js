@@ -51,7 +51,7 @@ window.addEventListener("online", async () => {
 window.addEventListener("load", async () => {
   if (navigator.onLine) {
     await syncPending();
-    updateQueueBadge?.();
+    updateSyncStatus();
   }
 });
 window.addEventListener("queueChanged", updateSyncStatus);
@@ -433,7 +433,8 @@ console.log("Save clicked");
   }
 
 
-
+  const currentQty = Number(qty);
+  
   const updated =
     addItem(barcode, currentQty);
 
@@ -455,7 +456,7 @@ console.log("Save clicked");
   document.getElementById("count")
   .innerText = count;
 
- const currentQty = Number(qty);
+ 
 
  try {
 
