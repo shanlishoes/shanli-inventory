@@ -458,11 +458,14 @@ console.log("Save clicked");
 
  try {
 
-  const ok = await syncItem(session, barcode, qty);
-
-  console.log("sync:", ok);
-
   updateSyncStatus();
+
+// ارسال در پس‌زمینه
+setTimeout(() => {
+  syncItem(session, barcode, qty)
+    .then(() => updateSyncStatus())
+    .catch(console.error);
+}, 0);
 
 } catch (e) {
 
