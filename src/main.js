@@ -79,13 +79,14 @@ document.querySelector("#app").innerHTML = `
 <button id="startBtn">
 شروع انبارگردانی
 </button>
-
-</div>
-
 </div>
 <div class="creator">
 Engineered by Hossein Alizadeh.ACC
 </div>
+</div>
+
+
+
 <div id="scanPage" style="display:none">
 
 <div class="topBar">
