@@ -91,7 +91,7 @@ Engineered by Hossein Alizadeh.ACC
     <p>می‌خواهید ادامه دهید یا انبارگردانی جدید شروع شود؟</p>
 
     <button id="continueBtn" class="modalBtn">
-      ▶ ادامه انبارگردانی
+      ▶ ادامه انبارگردانی قبلی
     </button>
 
     <button id="newBtn" class="modalBtn danger">
