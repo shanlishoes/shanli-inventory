@@ -18,10 +18,11 @@ import {
 import { syncItem, syncPending } from "./sync";
 const summaryCache = {};
 const beep = new Audio("/sounds/beep.mp3");
-
+const history = [];
 let session = null;
 let qty = 1;
 let count = 0;
+
 function updateSyncStatus() {
 
   const status = document.getElementById("syncStatus");
@@ -41,6 +42,7 @@ function updateSyncStatus() {
   }
 
 }
+
 // وقتی اینترنت وصل شد، صف آفلاین ارسال شود
 window.addEventListener("online", async () => {
   await syncPending();
@@ -197,7 +199,19 @@ placeholder="بارکد را وارد کنید">
 </button>
 
 </div>
+<div class="historyCard">
 
+  <div class="historyTitle">
+    آخرین ثبت‌ها
+  </div>
+
+  <div id="historyList">
+    <div class="historyEmpty">
+      هنوز چیزی ثبت نشده است
+    </div>
+  </div>
+
+</div>
 </div>
 
 </div>
@@ -364,6 +378,29 @@ async function showPreviousQty(code) {
 
   }
 }
+function addHistory(barcode, qty) {
+
+  history.unshift({
+    barcode,
+    qty
+  });
+
+  if (history.length > 5) {
+    history.pop();
+  }
+
+  const list = document.getElementById("historyList");
+
+  list.innerHTML = history.map(item => `
+    <div class="historyItem">
+      <span> ${item.qty} × </span>
+      <span> ${item.barcode} </span>
+      
+    </div>`
+  ).join("");
+
+}
+
 document.getElementById("plus").onclick = () => {
 
   qty++;
@@ -459,8 +496,11 @@ console.log("Save clicked");
   const currentQty =
   Number(document.getElementById("qty").value.trim()) || 1;
 
-  const updated =
-    addItem(barcode, currentQty);
+  const updated = addItem(barcode, currentQty);
+
+  addHistory(barcode, currentQty);
+
+  count = updated.count;
 
 
 
@@ -510,10 +550,6 @@ updateSyncStatus();
 beep.currentTime = 0;
 beep.play().catch(() => {});
 
-// ویبره (در گوشی‌های پشتیبانی‌شده)
-if ("vibrate" in navigator) {
-  navigator.vibrate([150, 50, 150]);
-}
   qty = 1;
 
 

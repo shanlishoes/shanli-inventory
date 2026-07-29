@@ -483,3 +483,35 @@ select:focus{
 .modalBtn.danger{
     background:#e53935;
 }
+.historyCard{
+    margin-top:20px;
+    background:#fff;
+    border-radius:14px;
+    padding:15px;
+}
+
+.historyTitle{
+    font-weight:bold;
+    margin-bottom:10px;
+    direction: ltr;
+    text-align: left;
+}
+
+.historyItem{
+    display:flex;
+    justify-content:space-between;
+    padding:8px 0;
+    border-bottom:1px solid #eee;
+    font-size:15px;
+    justify-content: flex-end;
+}
+
+.historyItem:last-child{
+    border-bottom:none;
+}
+
+.historyEmpty{
+    color:#888;
+    text-align:center;
+    padding:10px;
+}
