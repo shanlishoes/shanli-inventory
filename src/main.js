@@ -456,7 +456,8 @@ console.log("Save clicked");
   }
 
 
-  const currentQty = Number(qty);
+  const currentQty =
+  Number(document.getElementById("qty").value.trim()) || 1;
 
   const updated =
     addItem(barcode, currentQty);
