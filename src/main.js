@@ -511,8 +511,8 @@ beep.currentTime = 0;
 beep.play().catch(() => {});
 
 // ویبره (در گوشی‌های پشتیبانی‌شده)
-if (navigator.vibrate) {
-  navigator.vibrate(80);
+if ("vibrate" in navigator) {
+  navigator.vibrate([150, 50, 150]);
 }
   qty = 1;
 
