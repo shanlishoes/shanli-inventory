@@ -44,13 +44,13 @@ export async function syncItem(session, barcode, qty) {
 
     }
 
-    addToQueue(item);
+    addOfflineItem(item);
 
     return false;
 
   } catch (e) {
 
-    addToQueue(item);
+    addOfflineItem(item);
 
     return false;
 
