@@ -142,10 +142,10 @@ select:focus{
 }
 
 #lastQty{
-    font-size:22px;
+    font-size:16px;
     font-weight:bold;
     color:#16a34a;
-    margin-bottom:8px;
+    margin-bottom:3px;
 }
 
 #lastBarcode{
@@ -371,8 +371,8 @@ select:focus{
 
 #minus,
 #plus{
-    width:60px !important;
-    height:60px !important;
+    width:55px !important;
+    height:55px !important;
     background:#1976d2 !important;
     color:white !important;
     border:none !important;
@@ -380,9 +380,11 @@ select:focus{
     font-size:36px !important;
 }
 
+
 #qty{
+    margin: auto;
     flex:1 !important;
-    height:60px !important;
+    height:50px !important;
     text-align:center !important;
     font-size:38px !important;
 }
