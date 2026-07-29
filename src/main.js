@@ -471,8 +471,13 @@ console.log("Save clicked");
     return;
 
   }
-
-
+   if (summaryCache[barcode] !== undefined) {
+    summaryCache[barcode] += currentQty;
+   } else {
+    summaryCache[barcode] = currentQty;
+   }
+   document.getElementById("lastQty").innerText =
+    "قبلاً ثبت شده: " + summaryCache[barcode] + " عدد";
 
   count = updated.count;
 
@@ -501,7 +506,14 @@ setTimeout(() => {
 
 updateSyncStatus();
 
+// صدای بیپ
+beep.currentTime = 0;
+beep.play().catch(() => {});
 
+// ویبره (در گوشی‌های پشتیبانی‌شده)
+if (navigator.vibrate) {
+  navigator.vibrate(80);
+}
   qty = 1;
 
 

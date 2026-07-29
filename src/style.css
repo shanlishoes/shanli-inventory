@@ -144,15 +144,16 @@ select:focus{
 }
 
 #lastQty{
-    font-size:16px;
+    font-size:15px;
     font-weight:bold;
     color:#16a34a;
     margin-bottom:3px;
 }
 
 #lastBarcode{
-    font-size:18px;
+    font-size:15px;
     color:#555;
+    font-weight: bold;
 }
 
 
