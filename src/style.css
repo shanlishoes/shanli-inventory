@@ -446,3 +446,37 @@ select:focus{
     font-size:14px;
     
 }
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+}
+
+.modalBox{
+    width:90%;
+    max-width:360px;
+    background:#fff;
+    border-radius:18px;
+    padding:20px;
+    text-align:center;
+}
+
+.modalBtn{
+    width:100%;
+    margin-top:12px;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    background:#2d7be0;
+    color:#fff;
+    font-size:16px;
+    cursor:pointer;
+}
+
+.modalBtn.danger{
+    background:#e53935;
+}

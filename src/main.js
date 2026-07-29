@@ -85,7 +85,20 @@ Engineered by Hossein Alizadeh.ACC
 </div>
 </div>
 
+<div id="resumeModal" class="modal" style="display:none;">
+  <div class="modalBox">
+    <h3>انبارگردانی باز پیدا شد</h3>
+    <p>می‌خواهید ادامه دهید یا انبارگردانی جدید شروع شود؟</p>
 
+    <button id="continueBtn" class="modalBtn">
+      ▶ ادامه انبارگردانی
+    </button>
+
+    <button id="newBtn" class="modalBtn danger">
+      🆕 شروع انبارگردانی جدید
+    </button>
+  </div>
+</div>
 
 <div id="scanPage" style="display:none">
 
@@ -221,27 +234,39 @@ if (
   session.status === "open"
 ) {
 
-  const choice = prompt(
-    "انبارگردانی باز دارید:\n\n" +
-    "1 - ادامه قبلی\n" +
-    "2 - بستن و شروع جدید"
-  );
+  document.getElementById("resumeModal").style.display = "flex";
 
+  await new Promise(resolve => {
 
-  if (choice === "2") {
+    document.getElementById("continueBtn").onclick = () => {
 
-    await finishSessionApi(session.id);
+      document.getElementById("resumeModal").style.display = "none";
+      resolve();
 
-    finishSession();
+    };
 
-    session = startNewSession(
-      user,
-      supervisor,
-      branch
-    );
+    document.getElementById("newBtn").onclick = async () => {
 
-  }
+      // فوراً در برنامه انبارگردانی قبلی را ببند
+finishSession();
 
+session = startNewSession(
+  user,
+  supervisor,
+  branch
+);
+
+// ارسال به گوگل در پس‌زمینه
+finishSessionApi(session.id)
+  .catch(console.error);
+
+      document.getElementById("resumeModal").style.display = "none";
+
+      resolve();
+
+    };
+
+  });
 
 } else {
 
@@ -279,10 +304,6 @@ if (
   .innerText = branch;
 
 
-  // await startScanner(
-//     "reader",
-//     handleScan
-// );
 
 
 updateSyncStatus();
