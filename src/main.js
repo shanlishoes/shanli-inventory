@@ -74,7 +74,6 @@ document.querySelector("#app").innerHTML = `
 <option>انبار مرکزی</option>
 <option>شعبه شوط</option>
 <option>شعبه ارومیه</option>
-<option>شعبه خوی</option>
 </select>
 
 <button id="startBtn">
@@ -84,7 +83,9 @@ document.querySelector("#app").innerHTML = `
 </div>
 
 </div>
-
+<div class="creator">
+Engineered by Hossein Alizadeh.ACC
+</div>
 <div id="scanPage" style="display:none">
 
 <div class="topBar">
@@ -434,7 +435,7 @@ console.log("Save clicked");
 
 
   const currentQty = Number(qty);
-  
+
   const updated =
     addItem(barcode, currentQty);
 
