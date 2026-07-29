@@ -65,12 +65,12 @@ document.querySelector("#app").innerHTML = `
         <div class="infoLabel">📦 ثبت شده</div>
         <div id="count" class="infoValue countValue">0</div>
    
-    </div>
+    
+</div>
+</div>
        <div id="syncStatus" class="syncStatus">
        🟢 آنلاین | در انتظار ارسال: 0
     </div>
-</div>
-
 
 <div class="qtyCard">
 
