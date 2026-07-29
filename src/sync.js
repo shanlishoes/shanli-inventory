@@ -1,9 +1,9 @@
 import { sendToGoogle } from "./api";
 import {
-  addToQueue,
-  getQueue,
-  removeFirst
-} from "./offline";
+  addOfflineItem,
+  getOfflineQueue,
+  removeOfflineItem
+} from "./storage";
 
 export async function syncItem(session, barcode, qty) {
 
@@ -28,7 +28,7 @@ export async function syncItem(session, barcode, qty) {
   // اگر اینترنت قطع بود
   if (!navigator.onLine) {
 
-    addToQueue(item);
+    addOfflineItem(item);
 
     return false;
 
@@ -62,9 +62,11 @@ export async function syncPending() {
 
   if (!navigator.onLine) return;
 
-  while (getQueue().length > 0) {
+ let queue = getOfflineQueue();
 
-    const item = getQueue()[0];
+while (queue.length > 0) {
+
+  const item = queue[0];
 
     try {
 
@@ -72,7 +74,8 @@ export async function syncPending() {
 
       if (result.success) {
 
-        removeFirst();
+        removeOfflineItem(0);
+        queue = getOfflineQueue();
 
       } else {
 

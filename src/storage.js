@@ -1,5 +1,5 @@
 const STORAGE_KEY = "shanli_inventory_sessions";
-
+const OFFLINE_QUEUE_KEY = "shanli_offline_queue";
 /**
  * همه شمارش‌ها
  */
@@ -74,4 +74,42 @@ export function closeSession(id) {
  */
 export function clearAllSessions() {
   localStorage.removeItem(STORAGE_KEY);
+}
+// ===== Offline Queue =====
+
+export function getOfflineQueue() {
+  return JSON.parse(
+    localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]"
+  );
+}
+
+export function saveOfflineQueue(queue) {
+  localStorage.setItem(
+    OFFLINE_QUEUE_KEY,
+    JSON.stringify(queue)
+  );
+}
+
+export function addOfflineItem(item) {
+  const queue = getOfflineQueue();
+
+  queue.push(item);
+
+  saveOfflineQueue(queue);
+}
+
+export function removeOfflineItem(index = 0) {
+  const queue = getOfflineQueue();
+
+  queue.splice(index, 1);
+
+  saveOfflineQueue(queue);
+}
+
+export function clearOfflineQueue() {
+  localStorage.removeItem(OFFLINE_QUEUE_KEY);
+}
+
+export function offlineCount() {
+  return getOfflineQueue().length;
 }
