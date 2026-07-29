@@ -435,7 +435,7 @@ console.log("Save clicked");
 
 
   const updated =
-    addItem(barcode, qty);
+    addItem(barcode, currentQty);
 
 
 
@@ -455,7 +455,7 @@ console.log("Save clicked");
   document.getElementById("count")
   .innerText = count;
 
-
+ const currentQty = Number(qty);
 
  try {
 
@@ -463,7 +463,7 @@ console.log("Save clicked");
 
 // ارسال در پس‌زمینه
 setTimeout(() => {
-  syncItem(session, barcode, qty)
+  syncItem(session, barcode, currentQty)
     .then(() => updateSyncStatus())
     .catch(console.error);
 }, 0);
@@ -475,7 +475,6 @@ setTimeout(() => {
 }
 
 updateSyncStatus();
-
 
 
   qty = 1;
@@ -495,6 +494,7 @@ updateSyncStatus();
 
 
 };
+
 document.getElementById("finishBtn").onclick = async () => {
 
   if(!session){
