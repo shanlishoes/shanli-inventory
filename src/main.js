@@ -22,7 +22,25 @@ const beep = new Audio("/sounds/beep.mp3");
 let session = null;
 let qty = 1;
 let count = 0;
+function updateSyncStatus() {
 
+  const status = document.getElementById("syncStatus");
+
+  if (!status) return;
+
+  if (navigator.onLine) {
+
+    status.innerText =
+      `🟢 آنلاین | در انتظار ارسال: ${offlineCount()}`;
+
+  } else {
+
+    status.innerText =
+      `🔴 آفلاین | در انتظار ارسال: ${offlineCount()}`;
+
+  }
+
+}
 // وقتی اینترنت وصل شد، صف آفلاین ارسال شود
 window.addEventListener("online", async () => {
   await syncPending();
@@ -263,25 +281,7 @@ if (
 //     handleScan
 // );
 
-function updateSyncStatus() {
 
-  const status = document.getElementById("syncStatus");
-
-  if (!status) return;
-
-  if (navigator.onLine) {
-
-    status.innerText =
-      `🟢 آنلاین | در انتظار ارسال: ${offlineCount()}`;
-
-  } else {
-
-    status.innerText =
-      `🔴 آفلاین | در انتظار ارسال: ${offlineCount()}`;
-
-  }
-
-}
 updateSyncStatus();
 window.addEventListener("online", updateSyncStatus);
 window.addEventListener("offline", updateSyncStatus);
@@ -456,19 +456,20 @@ console.log("Save clicked");
 
 
 
-  syncItem(
-  session,
-  barcode,
-  qty
-).then(result => {
+ try {
 
-  if(result){
-    console.log("ثبت شد ✅");
-  }else{
-    console.log("در انتظار ارسال 🟡");
-  }
+  const ok = await syncItem(session, barcode, qty);
 
-});
+  console.log("sync:", ok);
+
+  updateSyncStatus();
+
+} catch (e) {
+
+  console.error(e);
+
+}
+
 updateSyncStatus();
 
 
