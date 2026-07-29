@@ -54,7 +54,8 @@ window.addEventListener("load", async () => {
     updateQueueBadge?.();
   }
 });
-
+window.addEventListener("queueChanged", updateSyncStatus);
+window.dispatchEvent(new Event("queueChanged"));
 document.querySelector("#app").innerHTML = `
 
 <div class="container">

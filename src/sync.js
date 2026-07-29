@@ -77,6 +77,9 @@ while (queue.length > 0) {
         removeOfflineItem(0);
         queue = getOfflineQueue();
 
+       // بروزرسانی لحظه‌ای تعداد
+      window.dispatchEvent(new Event("queueChanged"));
+
       } else {
 
         break;
