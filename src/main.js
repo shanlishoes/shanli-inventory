@@ -704,7 +704,7 @@ function restoreHistoryFromSession(sess) {
 
   const items = sess.items || [];
 
-  items.slice(-5).reverse().forEach(item => {
+  items.slice(-10).reverse().forEach(item => {
     history.push({
       itemId: item.itemId,
       barcode: item.barcode,
