@@ -664,9 +664,10 @@ function renderHistory() {
 
   list.innerHTML = history.map(item => `
     <div class="historyItem">
-      <span> ${item.qty} × ${item.barcode} </span>
+      
       <span class="historyBtns">
         <button class="editHistoryBtn" data-itemid="${item.itemId}">✏️ ویرایش</button>
+        <span> ${item.qty} × ${item.barcode} </span>
         <button class="deleteHistoryBtn" data-itemid="${item.itemId}">🗑 حذف</button>
       </span>
     </div>`
