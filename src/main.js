@@ -6,13 +6,20 @@ import {
   startNewSession,
   continueSession,
   finishSession,
-  addItem
+  addItem,
+  removeItem,
+  updateItemQty
 } from "./session";
 
 import {
   startSessionApi,
   finishSessionApi,
-  getSummary
+  getSummary,
+  login,
+  register,
+  deleteItemApi,
+  updateItemApi,
+  getUsers
 } from "./api";
 
 import { syncItem, syncPending } from "./sync";
@@ -22,6 +29,27 @@ const history = [];
 let session = null;
 let qty = 1;
 let count = 0;
+let lastSavedBarcode = null;
+let lastSavedTime = 0;
+
+// ===========================
+// کش لیست کاربران برای ورود آنی
+// ===========================
+
+let usersCache = [];
+
+async function refreshUsersCache() {
+  try {
+    const result = await getUsers();
+    if (result && result.success) {
+      usersCache = result.users;
+    }
+  } catch (err) {
+    console.error("خطا در دریافت لیست کاربران:", err);
+  }
+}
+
+refreshUsersCache();
 
 function updateSyncStatus() {
 
@@ -45,8 +73,9 @@ function updateSyncStatus() {
 
 // وقتی اینترنت وصل شد، صف آفلاین ارسال شود
 window.addEventListener("online", async () => {
+  console.log("🟢 اینترنت وصل شد، شروع همگام‌سازی...");
   await syncPending();
-  updateQueueBadge?.();
+  updateSyncStatus();
 });
 
 // هنگام باز شدن برنامه هم اگر اینترنت وصل بود، ارسال انجام شود
@@ -62,15 +91,63 @@ document.querySelector("#app").innerHTML = `
 
 <div class="container">
 
-<div id="loginPage">
-ّ
+<div id="authPage">
+
 <div class="card">
 
 <h1>📦 انبارگردانی شانلی</h1>
 
-<input id="user" placeholder="نام انباردار">
+<input id="authUser" placeholder="نام و نام خانوادگی">
 
-<input id="supervisor" placeholder="نام ناظر">
+<input id="authPass" type="password" placeholder="رمز عبور">
+
+<select id="authSupervisor">
+<option value="">انتخاب ناظر</option>
+<option>حسین علیزاده</option>
+<option>احد رمضان زاده</option>
+</select>
+
+<div class="auth-buttons">
+<button id="loginBtn">ورود</button>
+<button id="registerPageBtn">ثبت نام</button>
+</div>
+
+</div>
+<div class="creator">
+Engineered by Hossein Alizadeh.ACC
+</div>
+</div>
+
+<div id="registerPage" style="display:none;">
+
+<div class="card">
+
+<h1>📦 ثبت‌نام کاربر جدید</h1>
+
+<input id="regUser" placeholder="نام و نام خانوادگی">
+
+<input id="regPass" type="password" placeholder="رمز عبور">
+
+<input id="regPass2" type="password" placeholder="تکرار رمز عبور">
+
+<div class="auth-buttons">
+<button id="registerBtn">ثبت نام</button>
+<button id="backToLoginBtn">بازگشت</button>
+</div>
+
+</div>
+<div class="creator">
+Engineered by Hossein Alizadeh.ACC
+</div>
+</div>
+
+<div id="loginPage" style="display:none;">
+
+<div class="card">
+
+<h1>📦 انبارگردانی شانلی</h1>
+
+<div id="welcomeUser" style="text-align:center; margin-bottom:16px; font-size:18px; color:#14214d; font-weight:bold;"></div>
 
 <select id="branch">
 <option>انبار مرکزی</option>
@@ -80,6 +157,10 @@ document.querySelector("#app").innerHTML = `
 
 <button id="startBtn">
 شروع انبارگردانی
+</button>
+
+<button id="logoutBtn" style="margin-top:10px;width:100%;height:48px;border:none;border-radius:14px;background:#e5e7eb;color:#111827;font-size:16px;font-weight:bold;cursor:pointer;">
+خروج از حساب
 </button>
 </div>
 <div class="creator">
@@ -219,25 +300,204 @@ placeholder="بارکد را وارد کنید">
 `;
 
 
-document.getElementById("startBtn").onclick = async () => {
+// ===========================
+// مدیریت ورود / ثبت‌نام (Auth)
+// ===========================
 
-  const user =
-    document.getElementById("user").value.trim();
+const AUTH_KEY = "shanli_auth";
 
-  const supervisor =
-    document.getElementById("supervisor").value.trim();
+function getAuth() {
+  const raw = sessionStorage.getItem(AUTH_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
 
-  const branch =
-    document.getElementById("branch").value;
+function setAuth(auth) {
+  sessionStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+}
 
+function clearAuth() {
+  sessionStorage.removeItem(AUTH_KEY);
+}
 
-  if (!user) {
+// ===========================
+// قفل نشدن صفحه هنگام شمارش
+// ===========================
 
-    alert("نام انباردار را وارد کنید");
+let wakeLock = null;
 
+async function requestWakeLock() {
+  try {
+    if ("wakeLock" in navigator) {
+      wakeLock = await navigator.wakeLock.request("screen");
+    }
+  } catch (err) {
+    console.error("عدم امکان فعال‌سازی قفل نشدن صفحه:", err);
+  }
+}
+
+async function releaseWakeLock() {
+  try {
+    if (wakeLock) {
+      await wakeLock.release();
+      wakeLock = null;
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+document.addEventListener("visibilitychange", async () => {
+  if (wakeLock !== null && document.visibilityState === "visible") {
+    await requestWakeLock();
+  }
+});
+
+function showPage(id) {
+  ["authPage", "registerPage", "loginPage", "scanPage"].forEach(pid => {
+    const el = document.getElementById(pid);
+    if (el) el.style.display = pid === id ? "block" : "none";
+  });
+}
+
+// اگر قبلاً وارد شده، مستقیم برو صفحه انتخاب شعبه
+const existingAuth = getAuth();
+
+if (existingAuth) {
+  document.getElementById("welcomeUser").innerText =
+    "خوش آمدید، " + existingAuth.name;
+  showPage("loginPage");
+} else {
+  showPage("authPage");
+}
+
+document.getElementById("registerPageBtn").onclick = () => {
+  showPage("registerPage");
+};
+
+document.getElementById("backToLoginBtn").onclick = () => {
+  showPage("authPage");
+  refreshUsersCache();
+};
+
+document.getElementById("registerBtn").onclick = () => {
+
+  const name = document.getElementById("regUser").value.trim();
+  const pass = document.getElementById("regPass").value;
+  const pass2 = document.getElementById("regPass2").value;
+
+  if (!name || !pass) {
+    alert("نام و نام خانوادگی و رمز عبور را وارد کنید");
+    return;
+  }
+
+  if (pass !== pass2) {
+    alert("رمز عبور و تکرار آن یکسان نیستند");
+    return;
+  }
+
+  // بلافاصله به کاربر پیام بده و برگرد به صفحه ورود
+  alert("ثبت‌نام شما انجام شد. لطفاً منتظر تایید مدیر بمانید.");
+
+  document.getElementById("regUser").value = "";
+  document.getElementById("regPass").value = "";
+  document.getElementById("regPass2").value = "";
+
+  showPage("authPage");
+
+  // ارسال واقعی در پس‌زمینه
+  register(name, pass).then(result => {
+
+    if (!result.success) {
+      alert(
+        "ثبت‌نام «" + name + "» انجام نشد: " +
+        (result.message || "خطای نامشخص. دوباره تلاش کنید.")
+      );
+    }
+
+  }).catch(() => {
+    alert("ثبت‌نام «" + name + "» به دلیل قطعی ارتباط انجام نشد. دوباره تلاش کنید.");
+  });
+
+};
+
+document.getElementById("loginBtn").onclick = () => {
+
+  const name = document.getElementById("authUser").value.trim();
+  const pass = document.getElementById("authPass").value;
+  const supervisor = document.getElementById("authSupervisor").value.trim();
+
+  if (!name || !pass) {
+    alert("نام و نام خانوادگی و رمز عبور را وارد کنید");
+    return;
+  }
+
+  if (!supervisor) {
+    alert("لطفاً نام ناظر را انتخاب کنید");
+    return;
+  }
+
+  // اطلاعات کاربران از قبل (هنگام لود صفحه) دریافت شده، پس فوراً بررسی می‌کنیم
+  const match = usersCache.find(
+    u => u.name === name && String(u.password) === pass
+  );
+
+  if (!match) {
+
+    // شاید کاربر همین الان ثبت‌نام کرده و کش هنوز به‌روز نشده - یک بار دیگر تلاش کن
+    alert("نام و نام خانوادگی یا رمز عبور اشتباه است");
+    refreshUsersCache();
     return;
 
   }
+
+  if (match.status === "عدم تایید") {
+    alert("عضویت شما تایید نشد. با مدیر تماس بگیرید.");
+    return;
+  }
+
+  if (match.status !== "تایید شده") {
+    alert("عضویت شما هنوز تایید نشده است.");
+    return;
+  }
+
+  setAuth({
+    id: match.id,
+    name: match.name,
+    role: match.role,
+    supervisor
+  });
+
+  document.getElementById("welcomeUser").innerText =
+    "خوش آمدید، " + match.name;
+
+  showPage("loginPage");
+
+  // ثبت زمان ورود در گوگل‌شیت، در پس‌زمینه (بدون انتظار کاربر)
+  login(name, pass).catch(console.error);
+
+};
+
+document.getElementById("logoutBtn").onclick = () => {
+  clearAuth();
+  location.reload();
+};
+
+document.getElementById("startBtn").onclick = async () => {
+
+  const auth = getAuth();
+
+  if (!auth) {
+    alert("لطفاً ابتدا وارد شوید");
+    showPage("authPage");
+    return;
+  }
+
+  const user = auth.name;
+
+  const supervisor = auth.supervisor || "";
+
+  const branch =
+    document.getElementById("branch").value;
 
 
 session = continueSession();
@@ -255,6 +515,9 @@ if (
     document.getElementById("continueBtn").onclick = () => {
 
       document.getElementById("resumeModal").style.display = "none";
+
+      restoreHistoryFromSession(session);
+
       resolve();
 
     };
@@ -314,6 +577,9 @@ finishSessionApi(session.id)
   .style.display = "block";
 
 
+  requestWakeLock();
+
+
   document.getElementById("branchName")
   .innerText = branch;
 
@@ -352,6 +618,13 @@ document.getElementById("lastQty").innerText =
 
 
 
+let previousQtyTimer = null;
+
+function queueShowPreviousQty(code) {
+  clearTimeout(previousQtyTimer);
+  previousQtyTimer = setTimeout(() => showPreviousQty(code), 250);
+}
+
 async function showPreviousQty(code) {
 
   if (summaryCache[code] !== undefined) {
@@ -378,9 +651,41 @@ async function showPreviousQty(code) {
 
   }
 }
-function addHistory(barcode, qty) {
+
+function renderHistory() {
+
+  const list = document.getElementById("historyList");
+
+  if (history.length === 0) {
+    list.innerHTML =
+      `<div class="historyEmpty">هنوز چیزی ثبت نشده است</div>`;
+    return;
+  }
+
+  list.innerHTML = history.map(item => `
+    <div class="historyItem">
+      <span> ${item.qty} × ${item.barcode} </span>
+      <span class="historyBtns">
+        <button class="editHistoryBtn" data-itemid="${item.itemId}">✏️ ویرایش</button>
+        <button class="deleteHistoryBtn" data-itemid="${item.itemId}">🗑 حذف</button>
+      </span>
+    </div>`
+  ).join("");
+
+  document.querySelectorAll(".deleteHistoryBtn").forEach(btn => {
+    btn.onclick = () => deleteHistoryItem(btn.dataset.itemid);
+  });
+
+  document.querySelectorAll(".editHistoryBtn").forEach(btn => {
+    btn.onclick = () => editHistoryItem(btn.dataset.itemid);
+  });
+
+}
+
+function addHistory(barcode, qty, itemId) {
 
   history.unshift({
+    itemId,
     barcode,
     qty
   });
@@ -389,15 +694,115 @@ function addHistory(barcode, qty) {
     history.pop();
   }
 
-  const list = document.getElementById("historyList");
+  renderHistory();
 
-  list.innerHTML = history.map(item => `
-    <div class="historyItem">
-      <span> ${item.qty} × </span>
-      <span> ${item.barcode} </span>
-      
-    </div>`
-  ).join("");
+}
+
+function restoreHistoryFromSession(sess) {
+
+  history.length = 0;
+
+  const items = sess.items || [];
+
+  items.slice(-5).reverse().forEach(item => {
+    history.push({
+      itemId: item.itemId,
+      barcode: item.barcode,
+      qty: item.qty
+    });
+  });
+
+  renderHistory();
+
+  count = sess.count || 0;
+
+  const countEl = document.getElementById("count");
+  if (countEl) countEl.innerText = count;
+
+}
+
+async function deleteHistoryItem(itemId) {
+
+  const answer = confirm("این ثبت حذف شود؟");
+
+  if (!answer) return;
+
+  const result = removeItem(itemId);
+
+  if (!result) {
+    alert("این مورد پیدا نشد");
+    return;
+  }
+
+  const idx = history.findIndex(h => h.itemId === itemId);
+
+  if (idx !== -1) {
+    history.splice(idx, 1);
+  }
+
+  renderHistory();
+
+  count = result.session.count;
+
+  const countEl = document.getElementById("count");
+  if (countEl) countEl.innerText = count;
+
+  const removed = result.removed;
+
+  if (summaryCache[removed.barcode] !== undefined) {
+    summaryCache[removed.barcode] =
+      Math.max(0, summaryCache[removed.barcode] - Number(removed.qty));
+  }
+
+  // حذف از گوگل‌شیت (Inventory و Summary) در پس‌زمینه
+  deleteItemApi(itemId, session ? session.id : "", removed.barcode, removed.qty)
+    .catch(console.error);
+
+}
+
+function editHistoryItem(itemId) {
+
+  const item = history.find(h => h.itemId === itemId);
+
+  if (!item) return;
+
+  const input = prompt("تعداد جدید را وارد کنید:", item.qty);
+
+  if (input === null) return;
+
+  const newQty = Number(input);
+
+  if (!newQty || newQty <= 0) {
+    alert("عدد معتبر وارد کنید");
+    return;
+  }
+
+  const result = updateItemQty(itemId, newQty);
+
+  if (!result) {
+    alert("این مورد پیدا نشد");
+    return;
+  }
+
+  item.qty = newQty;
+
+  renderHistory();
+
+  if (summaryCache[result.barcode] !== undefined) {
+    summaryCache[result.barcode] = Math.max(
+      0,
+      summaryCache[result.barcode] - result.oldQty + newQty
+    );
+  }
+
+  // اعمال ویرایش در گوگل‌شیت، در پس‌زمینه
+  updateItemApi(
+    itemId,
+    session ? session.id : "",
+    result.barcode,
+    result.oldQty,
+    newQty
+  ).catch(console.error);
 
 }
 
@@ -455,7 +860,7 @@ document.getElementById("barcode")
 
   if(value){
 
-    showPreviousQty(value);
+    queueShowPreviousQty(value);
 
   }
 
@@ -493,16 +898,27 @@ console.log("Save clicked");
   }
 
 
+  // هشدار ثبت تکراری بارکد در کمتر از ۵ ثانیه
+  if (
+    barcode === lastSavedBarcode &&
+    Date.now() - lastSavedTime < 5000
+  ) {
+
+    const confirmDuplicate = confirm(
+      "این بارکد همین چند ثانیه پیش ثبت شد. مطمئنید می‌خواهید دوباره ثبت کنید؟"
+    );
+
+    if (!confirmDuplicate) {
+      return;
+    }
+
+  }
+
+
   const currentQty =
   Number(document.getElementById("qty").value.trim()) || 1;
 
   const updated = addItem(barcode, currentQty);
-
-  addHistory(barcode, currentQty);
-
-  count = updated.count;
-
-
 
   if(!updated){
 
@@ -511,15 +927,27 @@ console.log("Save clicked");
     return;
 
   }
-   if (summaryCache[barcode] !== undefined) {
-    summaryCache[barcode] += currentQty;
-   } else {
-    summaryCache[barcode] = currentQty;
-   }
-   document.getElementById("lastQty").innerText =
-    "قبلاً ثبت شده: " + summaryCache[barcode] + " عدد";
+
+  lastSavedBarcode = barcode;
+  lastSavedTime = Date.now();
+
+  addHistory(barcode, currentQty, updated.itemId);
 
   count = updated.count;
+
+   if (summaryCache[barcode] !== undefined) {
+
+    summaryCache[barcode] += currentQty;
+
+    document.getElementById("lastQty").innerText =
+      "قبلاً ثبت شده: " + summaryCache[barcode] + " عدد";
+
+   } else {
+
+    // مقدار قبلی هنوز مشخص نیست؛ به جای حدس اشتباه، فعلاً منتظر می‌مانیم
+    document.getElementById("lastQty").innerText = "در حال به‌روزرسانی...";
+
+   }
 
 
   document.getElementById("count")
@@ -531,11 +959,33 @@ console.log("Save clicked");
 
   updateSyncStatus();
 
-// ارسال در پس‌زمینه
-setTimeout(() => {
-  syncItem(session, barcode, currentQty)
-    .then(() => updateSyncStatus())
-    .catch(console.error);
+  const wasUnknown = summaryCache[barcode] === undefined;
+
+// ارسال در پس‌زمینه، و در صورت نیاز اصلاح تعداد قبلی بعد از تایید سرور
+setTimeout(async () => {
+
+  try {
+
+    await syncItem(session, barcode, currentQty, updated.itemId);
+
+    updateSyncStatus();
+
+    if (wasUnknown) {
+
+      const fresh = await getSummary(barcode);
+
+      if (fresh && fresh.success) {
+        summaryCache[barcode] = fresh.qty;
+      }
+
+    }
+
+  } catch (err) {
+
+    console.error(err);
+
+  }
+
 }, 0);
 
 } catch (e) {
@@ -583,21 +1033,18 @@ document.getElementById("finishBtn").onclick = async () => {
     return;
   }
 
-  const result = await finishSessionApi(session.id);
+  const sessionId = session.id;
 
-  if(result.success){
+  // بلافاصله محلی تمام می‌شود، ارسال به گوگل‌شیت در پس‌زمینه انجام می‌شود
+  finishSession();
 
-    finishSession();
+  releaseWakeLock();
 
-    alert("انبارگردانی با موفقیت پایان یافت");
+  alert("انبارگردانی با موفقیت پایان یافت");
 
-    location.reload();
+  finishSessionApi(sessionId).catch(console.error);
 
-  }else{
-
-    alert("خطا در پایان انبارگردانی");
-
-  }
+  location.reload();
 
 };
 const barcodeInput = document.getElementById("barcode");
@@ -605,7 +1052,7 @@ const barcodeInput = document.getElementById("barcode");
 document.querySelectorAll(".num").forEach(btn => {
   btn.onclick = () => {
     barcodeInput.value += btn.innerText;
-    showPreviousQty(barcodeInput.value);
+    queueShowPreviousQty(barcodeInput.value);
   };
 });
 
@@ -613,7 +1060,7 @@ document.getElementById("back").onclick = () => {
   barcodeInput.value = barcodeInput.value.slice(0, -1);
 
   if (barcodeInput.value) {
-    showPreviousQty(barcodeInput.value);
+    queueShowPreviousQty(barcodeInput.value);
   } else {
     document.getElementById("lastQty").innerText =
       "اولین ثبت این بارکد";
@@ -625,12 +1072,3 @@ document.getElementById("clear").onclick = () => {
   document.getElementById("lastQty").innerText =
     "اولین ثبت این بارکد";
 };
-
-// وقتی اینترنت وصل شد، همه موارد ذخیره شده ارسال شوند
-window.addEventListener("online", async () => {
-
-  console.log("🟢 اینترنت وصل شد، شروع همگام‌سازی...");
-
-  await syncPending();
- updateSyncStatus();
-});

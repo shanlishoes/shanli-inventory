@@ -1,97 +1,114 @@
 import { sendToGoogle } from "./api";
 import {
-  addOfflineItem,
-  getOfflineQueue,
-  removeOfflineItem
+addOfflineItem,
+getOfflineQueue,
+removeOfflineItem
 } from "./storage";
 
-export async function syncItem(session, barcode, qty) {
+export async function syncItem(session, barcode, qty, itemId) {
 
-  const item = {
+const item = {
 
-    sessionId: session.id,
+itemId,
 
-    time: new Date().toLocaleString("fa-IR"),
+sessionId: session.id,
 
-    branch: session.branch,
+time: new Date().toLocaleString("fa-IR"),
 
-    user: session.user,
+branch: session.branch,
 
-    supervisor: session.supervisor,
+user: session.user,
 
-    barcode,
+supervisor: session.supervisor,
 
-    qty: Number(qty)
+barcode,
 
-  };
+qty: Number(qty)
 
-  // اگر اینترنت قطع بود
-  if (!navigator.onLine) {
+};
 
-    addOfflineItem(item);
+// اگر اینترنت قطع بود
+if (!navigator.onLine) {
 
-    return false;
+addOfflineItem(item);
 
-  }
-
-  try {
-
-    const result = await sendToGoogle(item);
-
-    if (result.success) {
-
-      return true;
-
-    }
-
-    addOfflineItem(item);
-
-    return false;
-
-  } catch (e) {
-
-    addOfflineItem(item);
-
-    return false;
-
-  }
+return false;
 
 }
 
+try {
+
+const result = await sendToGoogle(item);
+
+if (result.success) {
+
+return true;
+
+}
+
+addOfflineItem(item);
+
+return false;
+
+} catch (e) {
+
+addOfflineItem(item);
+
+return false;
+
+}
+
+}
+
+let isSyncing = false;
+
 export async function syncPending() {
 
-  if (!navigator.onLine) return;
+if (!navigator.onLine) return;
 
- let queue = getOfflineQueue();
+// جلوگیری از اجرای همزمان چند syncPending که باعث ارسال تکراری می‌شود
+if (isSyncing) return;
+
+isSyncing = true;
+
+try {
+
+let queue = getOfflineQueue();
 
 while (queue.length > 0) {
 
-  const item = queue[0];
+const item = queue[0];
 
-    try {
+try {
 
-      const result = await sendToGoogle(item);
+const result = await sendToGoogle(item);
 
-      if (result.success) {
+if (result.success) {
 
-        removeOfflineItem(0);
-        queue = getOfflineQueue();
+removeOfflineItem(0);
+queue = getOfflineQueue();
 
-       // بروزرسانی لحظه‌ای تعداد
-      window.dispatchEvent(new Event("queueChanged"));
+// بروزرسانی لحظه‌ای تعداد
+window.dispatchEvent(new Event("queueChanged"));
 
-      } else {
+} else {
 
-        break;
+break;
 
-      }
+}
 
-    } catch {
+} catch {
 
-      break;
+break;
 
-    }
+}
 
-  }
+}
+
+} finally {
+
+isSyncing = false;
+
+}
 
 }

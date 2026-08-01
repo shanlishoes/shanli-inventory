@@ -1,78 +1,134 @@
 import {
-  createSession,
-  getOpenSession,
-  updateSession,
-  closeSession
+createSession,
+getOpenSession,
+updateSession,
+closeSession
 } from "./storage";
 
 export function startNewSession(user, supervisor, branch) {
 
-  const open = getOpenSession();
+const open = getOpenSession();
 
-  if (open) {
-    closeSession(open.id);
-  }
+if (open) {
+closeSession(open.id);
+}
 
-  const session = {
-    id: "INV-" + Date.now(),
+const session = {
+id: "INV-" + Date.now(),
 
-    user,
-    supervisor,
-    branch,
+user,
+supervisor,
+branch,
 
-    startTime: new Date().toISOString(),
-    endTime: null,
+startTime: new Date().toISOString(),
+endTime: null,
 
-    status: "open",
+status: "open",
 
-    count: 0,
+count: 0,
 
-    items: []
-  };
+items: []
+};
 
-  createSession(session);
+createSession(session);
 
-  return session;
+return session;
 
 }
 
 export function continueSession() {
 
-  return getOpenSession();
+return getOpenSession();
 
 }
 
 export function addItem(barcode, qty) {
 
-  const session = getOpenSession();
+const session = getOpenSession();
 
-  if (!session) return null;
+if (!session) return null;
 
-  session.items.push({
+const itemId =
+"IT" + Date.now() + "" + Math.floor(Math.random() * 1000);
 
-    barcode,
-    qty,
+session.items.push({
 
-    time: new Date().toISOString(),
+itemId,
 
-    synced: false
+barcode,
+qty,
 
-  });
+time: new Date().toISOString(),
 
-  session.count++;
+synced: false
 
-  updateSession(session);
+});
 
-  return session;
+session.count++;
+
+updateSession(session);
+
+return { ...session, itemId };
+
+}
+
+export function removeItem(itemId) {
+
+const session = getOpenSession();
+
+if (!session) return null;
+
+const index = session.items.findIndex(
+item => item.itemId === itemId
+);
+
+if (index === -1) return null;
+
+const removed = session.items[index];
+
+session.items.splice(index, 1);
+
+session.count = Math.max(0, session.count - 1);
+
+updateSession(session);
+
+return { session, removed };
+
+}
+
+export function updateItemQty(itemId, newQty) {
+
+const session = getOpenSession();
+
+if (!session) return null;
+
+const item = session.items.find(
+it => it.itemId === itemId
+);
+
+if (!item) return null;
+
+const oldQty = item.qty;
+
+item.qty = newQty;
+
+updateSession(session);
+
+return {
+session,
+barcode: item.barcode,
+oldQty,
+newQty
+};
 
 }
 
 export function finishSession() {
 
-  const session = getOpenSession();
+const session = getOpenSession();
 
-  if (!session) return;
+if (!session) return;
 
-  closeSession(session.id);
+closeSession(session.id);
 
 }
