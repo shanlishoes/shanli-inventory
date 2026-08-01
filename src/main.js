@@ -690,7 +690,7 @@ function addHistory(barcode, qty, itemId) {
     qty
   });
 
-  if (history.length > 5) {
+  if (history.length > 10) {
     history.pop();
   }
 
