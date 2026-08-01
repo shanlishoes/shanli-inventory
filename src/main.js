@@ -19,7 +19,9 @@ import {
   register,
   deleteItemApi,
   updateItemApi,
-  getUsers
+  getUsers,
+  getSessions,
+  getSessionItems
 } from "./api";
 
 import { syncItem, syncPending } from "./sync";
@@ -162,6 +164,28 @@ Engineered by Hossein Alizadeh.ACC
 <button id="logoutBtn" style="margin-top:10px;width:100%;height:48px;border:none;border-radius:14px;background:#e5e7eb;color:#111827;font-size:16px;font-weight:bold;cursor:pointer;">
 خروج از حساب
 </button>
+
+<button id="archiveBtn" style="margin-top:10px;width:100%;height:48px;border:none;border-radius:14px;background:#eef2ff;color:#3730a3;font-size:16px;font-weight:bold;cursor:pointer;">
+📁 بایگانی انبارگردانی‌ها
+</button>
+</div>
+<div class="creator">
+Engineered by Hossein Alizadeh.ACC
+</div>
+</div>
+
+<div id="archivePage" style="display:none;">
+
+<div class="card">
+
+<h1>📁 بایگانی انبارگردانی‌ها</h1>
+
+<div id="archiveList"></div>
+
+<button id="archiveBackBtn" style="margin-top:14px;width:100%;height:48px;border:none;border-radius:14px;background:#e5e7eb;color:#111827;font-size:16px;font-weight:bold;cursor:pointer;">
+بازگشت
+</button>
+
 </div>
 <div class="creator">
 Engineered by Hossein Alizadeh.ACC
@@ -353,7 +377,7 @@ document.addEventListener("visibilitychange", async () => {
 });
 
 function showPage(id) {
-  ["authPage", "registerPage", "loginPage", "scanPage"].forEach(pid => {
+  ["authPage", "registerPage", "loginPage", "archivePage", "scanPage"].forEach(pid => {
     const el = document.getElementById(pid);
     if (el) el.style.display = pid === id ? "block" : "none";
   });
@@ -481,6 +505,90 @@ document.getElementById("logoutBtn").onclick = () => {
   clearAuth();
   location.reload();
 };
+
+// ===========================
+// بایگانی انبارگردانی‌ها
+// ===========================
+
+let archiveSessions = [];
+
+document.getElementById("archiveBtn").onclick = () => {
+  showPage("archivePage");
+  loadArchiveList();
+};
+
+document.getElementById("archiveBackBtn").onclick = () => {
+  showPage("loginPage");
+};
+
+async function loadArchiveList() {
+
+  const container = document.getElementById("archiveList");
+  container.innerHTML = `<div class="historyEmpty">در حال بارگذاری...</div>`;
+
+  const result = await getSessions();
+
+  if (!result || !result.success) {
+    container.innerHTML = `<div class="historyEmpty">خطا در دریافت اطلاعات</div>`;
+    return;
+  }
+
+  archiveSessions = result.sessions || [];
+
+  if (archiveSessions.length === 0) {
+    container.innerHTML = `<div class="historyEmpty">هنوز انبارگردانی‌ای ثبت نشده است</div>`;
+    return;
+  }
+
+  container.innerHTML = archiveSessions.map((s, idx) => `
+    <div class="archiveItem" data-index="${idx}">
+      <div class="archiveItemTitle">${s.branch} — ${s.user}</div>
+      <div class="archiveItemMeta">ناظر: ${s.supervisor || "—"} | تعداد: ${s.count} | ${s.status}</div>
+      <div class="archiveItemMeta">شروع: ${s.start} | پایان: ${s.end || "—"}</div>
+    </div>`
+  ).join("");
+
+  document.querySelectorAll(".archiveItem").forEach(el => {
+    el.onclick = () => showArchiveDetail(archiveSessions[Number(el.dataset.index)]);
+  });
+
+}
+
+async function showArchiveDetail(sess) {
+
+  const container = document.getElementById("archiveList");
+  container.innerHTML = `<div class="historyEmpty">در حال بارگذاری اقلام...</div>`;
+
+  const result = await getSessionItems(sess.id);
+
+  if (!result || !result.success) {
+    container.innerHTML = `<div class="historyEmpty">خطا در دریافت اقلام</div>`;
+    return;
+  }
+
+  const items = result.items || [];
+
+  let html = `<button id="archiveDetailBack" style="margin-bottom:12px;width:100%;height:40px;border:none;border-radius:10px;background:#e5e7eb;color:#111827;font-weight:bold;cursor:pointer;">⬅ بازگشت به لیست</button>`;
+
+  html += `<div class="archiveItemTitle">${sess.branch} — ${sess.user}</div>`;
+  html += `<div class="archiveItemMeta">ناظر: ${sess.supervisor || "—"} | تعداد کل: ${sess.count}</div>`;
+
+  if (items.length === 0) {
+    html += `<div class="historyEmpty">آیتمی ثبت نشده</div>`;
+  } else {
+    html += items.map(it => `
+      <div class="historyItem">
+        <span>${it.qty} × ${it.barcode}</span>
+        <span style="font-size:12px;color:#888;">${it.time}</span>
+      </div>`
+    ).join("");
+  }
+
+  container.innerHTML = html;
+
+  document.getElementById("archiveDetailBack").onclick = loadArchiveList;
+
+}
 
 document.getElementById("startBtn").onclick = async () => {
 
@@ -664,10 +772,9 @@ function renderHistory() {
 
   list.innerHTML = history.map(item => `
     <div class="historyItem">
-      
+      <span> ${item.qty} × ${item.barcode} </span>
       <span class="historyBtns">
         <button class="editHistoryBtn" data-itemid="${item.itemId}">✏️ ویرایش</button>
-        <span> ${item.qty} × ${item.barcode} </span>
         <button class="deleteHistoryBtn" data-itemid="${item.itemId}">🗑 حذف</button>
       </span>
     </div>`
@@ -691,7 +798,7 @@ function addHistory(barcode, qty, itemId) {
     qty
   });
 
-  if (history.length > 10) {
+  if (history.length > 5) {
     history.pop();
   }
 
@@ -705,7 +812,7 @@ function restoreHistoryFromSession(sess) {
 
   const items = sess.items || [];
 
-  items.slice(-10).reverse().forEach(item => {
+  items.slice(-5).reverse().forEach(item => {
     history.push({
       itemId: item.itemId,
       barcode: item.barcode,

@@ -1,161 +1,183 @@
 const API_URL =
-"https://script.google.com/macros/s/AKfycbzvpGuv7smZKleGDjhHvIh-bM86Mc4eqre8g57WMQC5rzuHuMwyrUMAXJR4YPTg6nZEQA/exec";
+  "https://script.google.com/macros/s/AKfycbzvpGuv7smZKleGDjhHvIh-bM86Mc4eqre8g57WMQC5rzuHuMwyrUMAXJR4YPTg6nZEQA/exec";
 
 async function request(data) {
 
-try {
+  try {
 
-const response = await fetch(API_URL, {
-method: "POST",
-redirect: "follow",
-headers: {
-"Content-Type": "text/plain;charset=utf-8"
-},
-body: JSON.stringify(data)
-});
+    const response = await fetch(API_URL, {
+      method: "POST",
+      redirect: "follow",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify(data)
+    });
 
-return await response.json();
+    return await response.json();
 
-} catch (err) {
+  } catch (err) {
 
-console.error(err);
+    console.error(err);
 
-return {
-success: false
-};
+    return {
+      success: false
+    };
 
-}
+  }
 
 }
 
 export async function startSessionApi(data) {
 
-return await request({
-action: "startSession",
-...data
-});
+  return await request({
+    action: "startSession",
+    ...data
+  });
 
 }
 
 export async function sendToGoogle(data) {
 
-return await request({
-action: "saveItem",
-...data
-});
+  return await request({
+    action: "saveItem",
+    ...data
+  });
 
 }
 
 export async function finishSessionApi(sessionId) {
 
-return await request({
+  return await request({
 
-action: "finishSession",
+    action: "finishSession",
 
-sessionId,
+    sessionId,
 
-end: new Date().toLocaleString("fa-IR")
+    end: new Date().toLocaleString("fa-IR")
 
-});
+  });
 
 }
 
 export async function getSummary(barcode) {
 
-return await request({
+  return await request({
 
-action: "getSummary",
+    action: "getSummary",
 
-barcode
+    barcode
 
-});
+  });
 
 }
 
 export async function getOpenSession(user) {
 
-return await request({
+  return await request({
 
-action: "getOpenSession",
+    action: "getOpenSession",
 
-user
+    user
 
-});
+  });
 
 }
 
 export async function login(name, password) {
 
-return await request({
+  return await request({
 
-action: "login",
+    action: "login",
 
-name,
+    name,
 
-password
+    password
 
-});
+  });
 
 }
 
 export async function register(name, password) {
 
-return await request({
+  return await request({
 
-action: "register",
+    action: "register",
 
-name,
+    name,
 
-password
+    password
 
-});
+  });
 
 }
 
 export async function deleteItemApi(itemId, sessionId, barcode, qty) {
 
-return await request({
+  return await request({
 
-action: "deleteItem",
+    action: "deleteItem",
 
-itemId,
+    itemId,
 
-sessionId,
+    sessionId,
 
-barcode,
+    barcode,
 
-qty
+    qty
 
-});
+  });
 
 }
 
 export async function updateItemApi(itemId, sessionId, barcode, oldQty, newQty) {
 
-return await request({
+  return await request({
 
-action: "updateItem",
+    action: "updateItem",
 
-itemId,
+    itemId,
 
-sessionId,
+    sessionId,
 
-barcode,
+    barcode,
 
-oldQty,
+    oldQty,
 
-newQty
+    newQty
 
-});
+  });
 
 }
 
 export async function getUsers() {
 
-return await request({
+  return await request({
 
-action: "getUsers"
+    action: "getUsers"
 
-});
+  });
+
+}
+
+export async function getSessions() {
+
+  return await request({
+
+    action: "getSessions"
+
+  });
+
+}
+
+export async function getSessionItems(sessionId) {
+
+  return await request({
+
+    action: "getSessionItems",
+
+    sessionId
+
+  });
 
 }
