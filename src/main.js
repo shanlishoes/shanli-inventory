@@ -166,7 +166,7 @@ Engineered by Hossein Alizadeh.ACC
 خروج از حساب
 </button>
 
-<button id="archiveBtn" style="margin-top:10px;width:100%;height:48px;border:none;border-radius:14px;background:#eef2ff;color:#3730a3;font-size:16px;font-weight:bold;cursor:pointer;">
+<button id="archiveBtn" style="display:none;margin-top:10px;width:100%;height:48px;border:none;border-radius:14px;background:#eef2ff;color:#3730a3;font-size:16px;font-weight:bold;cursor:pointer;">
 📁 بایگانی انبارگردانی‌ها
 </button>
 
@@ -419,8 +419,11 @@ if (existingAuth) {
 }
 
 function toggleAdminButton(role) {
-  const btn = document.getElementById("adminBtn");
-  if (btn) btn.style.display = (role === "مدیر") ? "block" : "none";
+  const adminBtnEl = document.getElementById("adminBtn");
+  if (adminBtnEl) adminBtnEl.style.display = (role === "مدیر") ? "block" : "none";
+
+  const archiveBtnEl = document.getElementById("archiveBtn");
+  if (archiveBtnEl) archiveBtnEl.style.display = (role === "مدیر") ? "block" : "none";
 }
 
 document.getElementById("registerPageBtn").onclick = () => {
