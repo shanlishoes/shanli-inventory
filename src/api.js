@@ -181,3 +181,21 @@ export async function getSessionItems(sessionId) {
   });
 
 }
+
+export async function updateUserApi(id, { status, role, active } = {}) {
+
+  return await request({
+
+    action: "updateUser",
+
+    id,
+
+    status,
+
+    role,
+
+    active
+
+  });
+
+}

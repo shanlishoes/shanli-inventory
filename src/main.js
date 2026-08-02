@@ -21,7 +21,8 @@ import {
   updateItemApi,
   getUsers,
   getSessions,
-  getSessionItems
+  getSessionItems,
+  updateUserApi
 } from "./api";
 
 import { syncItem, syncPending } from "./sync";
@@ -168,6 +169,28 @@ Engineered by Hossein Alizadeh.ACC
 <button id="archiveBtn" style="margin-top:10px;width:100%;height:48px;border:none;border-radius:14px;background:#eef2ff;color:#3730a3;font-size:16px;font-weight:bold;cursor:pointer;">
 📁 بایگانی انبارگردانی‌ها
 </button>
+
+<button id="adminBtn" style="display:none;margin-top:10px;width:100%;height:48px;border:none;border-radius:14px;background:#fef3c7;color:#92400e;font-size:16px;font-weight:bold;cursor:pointer;">
+⚙️ پنل مدیریت کاربران
+</button>
+</div>
+<div class="creator">
+Engineered by Hossein Alizadeh.ACC
+</div>
+</div>
+
+<div id="adminPage" style="display:none;">
+
+<div class="card">
+
+<h1>⚙️ مدیریت کاربران</h1>
+
+<div id="adminList"></div>
+
+<button id="adminBackBtn" style="margin-top:14px;width:100%;height:48px;border:none;border-radius:14px;background:#e5e7eb;color:#111827;font-size:16px;font-weight:bold;cursor:pointer;">
+بازگشت
+</button>
+
 </div>
 <div class="creator">
 Engineered by Hossein Alizadeh.ACC
@@ -377,7 +400,7 @@ document.addEventListener("visibilitychange", async () => {
 });
 
 function showPage(id) {
-  ["authPage", "registerPage", "loginPage", "archivePage", "scanPage"].forEach(pid => {
+  ["authPage", "registerPage", "loginPage", "archivePage", "adminPage", "scanPage"].forEach(pid => {
     const el = document.getElementById(pid);
     if (el) el.style.display = pid === id ? "block" : "none";
   });
@@ -389,9 +412,15 @@ const existingAuth = getAuth();
 if (existingAuth) {
   document.getElementById("welcomeUser").innerText =
     "خوش آمدید، " + existingAuth.name;
+  toggleAdminButton(existingAuth.role);
   showPage("loginPage");
 } else {
   showPage("authPage");
+}
+
+function toggleAdminButton(role) {
+  const btn = document.getElementById("adminBtn");
+  if (btn) btn.style.display = (role === "مدیر") ? "block" : "none";
 }
 
 document.getElementById("registerPageBtn").onclick = () => {
@@ -494,6 +523,8 @@ document.getElementById("loginBtn").onclick = () => {
   document.getElementById("welcomeUser").innerText =
     "خوش آمدید، " + match.name;
 
+  toggleAdminButton(match.role);
+
   showPage("loginPage");
 
   // ثبت زمان ورود در گوگل‌شیت، در پس‌زمینه (بدون انتظار کاربر)
@@ -520,6 +551,89 @@ document.getElementById("archiveBtn").onclick = () => {
 document.getElementById("archiveBackBtn").onclick = () => {
   showPage("loginPage");
 };
+
+// ===========================
+// پنل مدیریت کاربران (فقط برای نقش «مدیر»)
+// ===========================
+
+const STATUS_OPTIONS = ["در انتظار تایید", "تایید شده", "عدم تایید"];
+const ACTIVE_OPTIONS = ["فعال", "غیرفعال"];
+
+document.getElementById("adminBtn").onclick = () => {
+  showPage("adminPage");
+  loadAdminUsers();
+};
+
+document.getElementById("adminBackBtn").onclick = () => {
+  showPage("loginPage");
+};
+
+async function loadAdminUsers() {
+
+  const container = document.getElementById("adminList");
+  container.innerHTML = `<div class="historyEmpty">در حال بارگذاری...</div>`;
+
+  const result = await getUsers();
+
+  if (!result || !result.success) {
+    container.innerHTML = `<div class="historyEmpty">خطا در دریافت لیست کاربران</div>`;
+    return;
+  }
+
+  const list = result.users || [];
+
+  if (list.length === 0) {
+    container.innerHTML = `<div class="historyEmpty">کاربری ثبت نشده است</div>`;
+    return;
+  }
+
+  container.innerHTML = list.map((u, idx) => `
+    <div class="archiveItem" data-index="${idx}">
+      <div class="archiveItemTitle">${u.name}</div>
+
+      <div class="adminRow">
+        <label>وضعیت</label>
+        <select class="adminStatus" data-id="${u.id}">
+          ${STATUS_OPTIONS.map(opt =>
+            `<option value="${opt}" ${opt === u.status ? "selected" : ""}>${opt}</option>`
+          ).join("")}
+        </select>
+      </div>
+
+      <div class="adminRow">
+        <label>نقش</label>
+        <input class="adminRole" data-id="${u.id}" value="${u.role || ""}" placeholder="مثلاً: مدیر، انباردار">
+      </div>
+
+      <button class="adminSaveBtn" data-id="${u.id}">ذخیره</button>
+
+    </div>`
+  ).join("");
+
+  document.querySelectorAll(".adminSaveBtn").forEach(btn => {
+    btn.onclick = () => saveAdminUser(btn.dataset.id);
+  });
+
+}
+
+async function saveAdminUser(id) {
+
+  const statusEl = document.querySelector(`.adminStatus[data-id="${id}"]`);
+  const roleEl = document.querySelector(`.adminRole[data-id="${id}"]`);
+
+  const status = statusEl ? statusEl.value : undefined;
+  const role = roleEl ? roleEl.value.trim() : undefined;
+
+  const result = await updateUserApi(id, { status, role });
+
+  if (result && result.success) {
+    alert("ذخیره شد");
+    refreshUsersCache();
+  } else {
+    alert("خطا در ذخیره‌سازی");
+  }
+
+}
 
 async function loadArchiveList() {
 
