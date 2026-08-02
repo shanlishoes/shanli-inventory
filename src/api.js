@@ -182,7 +182,7 @@ export async function getSessionItems(sessionId) {
 
 }
 
-export async function updateUserApi(id, { status, role, active } = {}) {
+export async function updateUserApi(id, { status, role, active, password } = {}) {
 
   return await request({
 
@@ -194,7 +194,33 @@ export async function updateUserApi(id, { status, role, active } = {}) {
 
     role,
 
-    active
+    active,
+
+    password
+
+  });
+
+}
+
+export async function heartbeat(sessionId) {
+
+  return await request({
+
+    action: "heartbeat",
+
+    sessionId
+
+  });
+
+}
+
+export async function forceFinishSessionApi(sessionId) {
+
+  return await request({
+
+    action: "forceFinishSession",
+
+    sessionId
 
   });
 

@@ -22,7 +22,9 @@ import {
   getUsers,
   getSessions,
   getSessionItems,
-  updateUserApi
+  updateUserApi,
+  heartbeat,
+  forceFinishSessionApi
 } from "./api";
 
 import { syncItem, syncPending } from "./sync";
@@ -173,6 +175,28 @@ Engineered by Hossein Alizadeh.ACC
 <button id="adminBtn" style="display:none;margin-top:10px;width:100%;height:48px;border:none;border-radius:14px;background:#fef3c7;color:#92400e;font-size:16px;font-weight:bold;cursor:pointer;">
 ⚙️ پنل مدیریت کاربران
 </button>
+
+<button id="liveBtn" style="display:none;margin-top:10px;width:100%;height:48px;border:none;border-radius:14px;background:#dcfce7;color:#166534;font-size:16px;font-weight:bold;cursor:pointer;">
+🟢 در حال انجام
+</button>
+</div>
+<div class="creator">
+Engineered by Hossein Alizadeh.ACC
+</div>
+</div>
+
+<div id="livePage" style="display:none;">
+
+<div class="card">
+
+<h1>🟢 انبارگردانی‌های در حال انجام</h1>
+
+<div id="liveList"></div>
+
+<button id="liveBackBtn" style="margin-top:14px;width:100%;height:48px;border:none;border-radius:14px;background:#e5e7eb;color:#111827;font-size:16px;font-weight:bold;cursor:pointer;">
+بازگشت
+</button>
+
 </div>
 <div class="creator">
 Engineered by Hossein Alizadeh.ACC
@@ -399,8 +423,37 @@ document.addEventListener("visibilitychange", async () => {
   }
 });
 
+// ===========================
+// ضربان دوره‌ای برای نمایش آنلاین/آفلاین بودن به مدیر
+// ===========================
+
+let heartbeatInterval = null;
+
+function startHeartbeat() {
+
+  stopHeartbeat();
+
+  if (session) {
+    heartbeat(session.id).catch(() => {});
+  }
+
+  heartbeatInterval = setInterval(() => {
+    if (session) {
+      heartbeat(session.id).catch(() => {});
+    }
+  }, 30000);
+
+}
+
+function stopHeartbeat() {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = null;
+  }
+}
+
 function showPage(id) {
-  ["authPage", "registerPage", "loginPage", "archivePage", "adminPage", "scanPage"].forEach(pid => {
+  ["authPage", "registerPage", "loginPage", "archivePage", "adminPage", "livePage", "scanPage"].forEach(pid => {
     const el = document.getElementById(pid);
     if (el) el.style.display = pid === id ? "block" : "none";
   });
@@ -424,6 +477,9 @@ function toggleAdminButton(role) {
 
   const archiveBtnEl = document.getElementById("archiveBtn");
   if (archiveBtnEl) archiveBtnEl.style.display = (role === "مدیر") ? "block" : "none";
+
+  const liveBtnEl = document.getElementById("liveBtn");
+  if (liveBtnEl) liveBtnEl.style.display = (role === "مدیر") ? "block" : "none";
 }
 
 document.getElementById("registerPageBtn").onclick = () => {
@@ -608,6 +664,11 @@ async function loadAdminUsers() {
         <input class="adminRole" data-id="${u.id}" value="${u.role || ""}" placeholder="مثلاً: مدیر، انباردار">
       </div>
 
+      <div class="adminRow">
+        <label>رمز جدید</label>
+        <input class="adminPassword" data-id="${u.id}" type="text" placeholder="خالی = بدون تغییر">
+      </div>
+
       <button class="adminSaveBtn" data-id="${u.id}">ذخیره</button>
 
     </div>`
@@ -623,17 +684,95 @@ async function saveAdminUser(id) {
 
   const statusEl = document.querySelector(`.adminStatus[data-id="${id}"]`);
   const roleEl = document.querySelector(`.adminRole[data-id="${id}"]`);
+  const passwordEl = document.querySelector(`.adminPassword[data-id="${id}"]`);
 
   const status = statusEl ? statusEl.value : undefined;
   const role = roleEl ? roleEl.value.trim() : undefined;
+  const password = (passwordEl && passwordEl.value.trim()) ? passwordEl.value.trim() : undefined;
 
-  const result = await updateUserApi(id, { status, role });
+  const result = await updateUserApi(id, { status, role, password });
 
   if (result && result.success) {
     alert("ذخیره شد");
+    if (passwordEl) passwordEl.value = "";
     refreshUsersCache();
   } else {
     alert("خطا در ذخیره‌سازی");
+  }
+
+}
+
+// ===========================
+// انبارگردانی‌های در حال انجام (فقط برای مدیر)
+// ===========================
+
+document.getElementById("liveBtn").onclick = () => {
+  showPage("livePage");
+  loadLiveSessions();
+};
+
+document.getElementById("liveBackBtn").onclick = () => {
+  showPage("loginPage");
+};
+
+async function loadLiveSessions() {
+
+  const container = document.getElementById("liveList");
+  container.innerHTML = `<div class="historyEmpty">در حال بارگذاری...</div>`;
+
+  const result = await getSessions();
+
+  if (!result || !result.success) {
+    container.innerHTML = `<div class="historyEmpty">خطا در دریافت اطلاعات</div>`;
+    return;
+  }
+
+  const active = (result.sessions || []).filter(s => s.status === "فعال");
+
+  if (active.length === 0) {
+    container.innerHTML = `<div class="historyEmpty">در حال حاضر هیچ انبارگردانی فعالی وجود ندارد</div>`;
+    return;
+  }
+
+  container.innerHTML = active.map(s => {
+
+    const lastActiveMs = Number(s.lastActive) || 0;
+    const secondsAgo = lastActiveMs ? Math.floor((Date.now() - lastActiveMs) / 1000) : null;
+    const isOnline = secondsAgo !== null && secondsAgo < 90;
+
+    const statusText = isOnline
+      ? "🟢 آنلاین"
+      : (secondsAgo !== null ? "🔴 آفلاین (" + Math.floor(secondsAgo / 60) + " دقیقه پیش فعال بوده)" : "🔴 آفلاین");
+
+    return `
+      <div class="archiveItem">
+        <div class="archiveItemTitle">${s.branch} — ${s.user}</div>
+        <div class="archiveItemMeta">ناظر: ${s.supervisor || "—"} | تعداد تاکنون: ${s.count}</div>
+        <div class="archiveItemMeta">${statusText}</div>
+        <button class="forceFinishBtn" data-id="${s.id}">⛔ پایان اجباری</button>
+      </div>`;
+
+  }).join("");
+
+  document.querySelectorAll(".forceFinishBtn").forEach(btn => {
+    btn.onclick = () => forceFinishFromAdmin(btn.dataset.id);
+  });
+
+}
+
+async function forceFinishFromAdmin(sessionId) {
+
+  const ok = confirm("این انبارگردانی به‌صورت اجباری پایان یابد؟");
+
+  if (!ok) return;
+
+  const result = await forceFinishSessionApi(sessionId);
+
+  if (result && result.success) {
+    alert("پایان یافت");
+    loadLiveSessions();
+  } else {
+    alert("خطا در پایان دادن به انبارگردانی");
   }
 
 }
@@ -803,6 +942,8 @@ finishSessionApi(session.id)
 
 
   requestWakeLock();
+
+  startHeartbeat();
 
 
   document.getElementById("branchName")
@@ -1264,6 +1405,8 @@ document.getElementById("finishBtn").onclick = async () => {
   finishSession();
 
   releaseWakeLock();
+
+  stopHeartbeat();
 
   alert("انبارگردانی با موفقیت پایان یافت");
 
